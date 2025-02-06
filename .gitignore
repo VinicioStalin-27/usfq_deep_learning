@@ -173,3 +173,6 @@ cython_debug/
 media/
 models/
 
+src/data/
+src/lightning_logs/
+src/logs/
