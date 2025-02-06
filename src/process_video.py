@@ -10,7 +10,6 @@ from collections import defaultdict, deque
 
 from view_transformer import ViewTransformer
 
-
 # CONFIGURATION
 CONFIDENCE_THRESHOLD = 0.3
 IOU_THRESHOLD = 0.5
@@ -118,6 +117,18 @@ def process_video(source_video_path: str, target_video_path: str, model_name: st
             # add frame to target video
             sink.write_frame(annotated_frame)
 
-    df = pd.DataFrame(data=output_data, columns=["tracker_id", "frames", "x1", "y1", "x2", "y2", "speed"])
+    df = pd.DataFrame(data=output_data, columns=["track_id", "frames", "x1", "y1", "x2", "y2", "speed"])
+    df = df[df["speed"] != -1]  # Eliminar registros sin velocidad estimada
+    # Calcular las coordenadas del centro a partir de x1, y1, x2, y2
+    df["center_x"] = (df["x1"] + df["x2"]) / 2.0
+    df["center_y"] = (df["y1"] + df["y2"]) / 2.0
+    df["speed_smoth"] = (
+        df.groupby("track_id")["speed"]
+        .transform(lambda x: x.rolling(window=5, center=True)
+                            .mean()
+                            .fillna(method="bfill")
+                            .fillna(method="ffill"))
+    )
     df.to_csv(output_csv, index=False)
     print("Output saved to ", output_csv)
+    return df
